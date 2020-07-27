@@ -1,10 +1,8 @@
 package de.beiertu.kafka.protobuf.example.kafka
 
 import com.google.protobuf.GeneratedMessageV3
-import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig
-import io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -45,6 +43,4 @@ val properties = Properties().apply {
     this[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = KafkaProtobufSerializer::class.java
 
     this[KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG] = "http://localhost:8081"
-
-    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicRecordNameStrategy::class.java.name
 }

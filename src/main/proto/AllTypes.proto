@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package de.beiertu.protobuf;
+
+option java_outer_classname = "AllTypesProto";
+
+import "Order.proto";
+import "Person.proto";
+
+message AllTypes {
+  oneof oneof_type {
+    Order order = 1;
+    Person person = 2;
+  }
+}
