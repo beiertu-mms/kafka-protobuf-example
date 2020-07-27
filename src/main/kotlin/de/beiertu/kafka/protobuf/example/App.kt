@@ -5,29 +5,33 @@ package de.beiertu.kafka.protobuf.example
 
 import de.beiertu.kafka.protobuf.example.config.Config
 import de.beiertu.kafka.protobuf.example.kafka.DefaultEventProducer
-import de.beiertu.protobuf.AllTypesProto
+import de.beiertu.kafka.protobuf.example.kafka.EventProducer
+import de.beiertu.kafka.protobuf.example.streams.DefaultStreams
+import de.beiertu.kafka.protobuf.example.streams.Streams
+import de.beiertu.protobuf.AllTypes
 import de.beiertu.protobuf.Order
 import de.beiertu.protobuf.Person
 import java.util.UUID
 
 class App {
     companion object {
-        private val producer = DefaultEventProducer()
+        private val producer: EventProducer by lazy { DefaultEventProducer() }
+        private val streams: Streams by lazy { DefaultStreams() }
 
         @JvmStatic
         fun main(args: Array<String>) {
             listOf(
-                AllTypesProto.AllTypes.newBuilder()
-                .setPerson(
-                    Person.newBuilder()
-                        .setName("Tung")
-                        .setAge(30)
-                        .setGender(Person.Gender.MALE)
-                        .build()
-                )
-                .build(),
+                AllTypes.OrderEvents.newBuilder()
+                    .setPerson(
+                        Person.newBuilder()
+                            .setName("Tung")
+                            .setAge(30)
+                            .setGender(Person.Gender.MALE)
+                            .build()
+                    )
+                    .build(),
 
-                AllTypesProto.AllTypes.newBuilder()
+                AllTypes.OrderEvents.newBuilder()
                     .setOrder(
                         Order.newBuilder()
                             .setId("uuid")
@@ -42,7 +46,22 @@ class App {
                     .publish(Config.inputTopic, genKey(), message)
                     ?.let {
                         println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
-                    } ?: println("failed to publish event")
+                    }
+            }
+
+            Thread.sleep(500)
+
+            try {
+                streams.start()
+                    .also { println("streams started") }
+                Thread.sleep(3000)
+            } catch (e: Exception) {
+                println("streams failed")
+                e.printStackTrace()
+                streams.close()
+            } finally {
+                println("stop streams")
+                streams.close()
             }
         }
 
