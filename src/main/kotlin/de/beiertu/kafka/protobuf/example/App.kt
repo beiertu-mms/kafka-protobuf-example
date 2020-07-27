@@ -3,8 +3,12 @@
  */
 package de.beiertu.kafka.protobuf.example
 
+import de.beiertu.kafka.protobuf.example.config.Config
 import de.beiertu.kafka.protobuf.example.kafka.DefaultEventProducer
+import de.beiertu.protobuf.AllTypesProto
+import de.beiertu.protobuf.Order
 import de.beiertu.protobuf.Person
+import java.util.UUID
 
 class App {
     companion object {
@@ -12,15 +16,36 @@ class App {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val message = Person.newBuilder()
-                .setName("Tung")
-                .setAge(30)
-                .setGender(Person.Gender.MALE)
-                .build()
+            listOf(
+                AllTypesProto.AllTypes.newBuilder()
+                .setPerson(
+                    Person.newBuilder()
+                        .setName("Tung")
+                        .setAge(30)
+                        .setGender(Person.Gender.MALE)
+                        .build()
+                )
+                .build(),
 
-            producer.publish(message)?.let {
-                println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
-            } ?: println("failed to publish event")
+                AllTypesProto.AllTypes.newBuilder()
+                    .setOrder(
+                        Order.newBuilder()
+                            .setId("uuid")
+                            .setNumber("1")
+                            .setCountry("DE")
+                            .setBrand(Order.Brand.MEDIA_MARKT)
+                            .build()
+                    )
+                    .build()
+            ).forEach { message ->
+                producer
+                    .publish(Config.inputTopic, genKey(), message)
+                    ?.let {
+                        println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
+                    } ?: println("failed to publish event")
+            }
         }
+
+        private fun genKey() = UUID.randomUUID().toString()
     }
 }

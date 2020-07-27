@@ -1,46 +1,27 @@
 package de.beiertu.kafka.protobuf.example.kafka
 
 import com.google.protobuf.GeneratedMessageV3
-import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
-import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig
-import org.apache.kafka.clients.CommonClientConfigs
+import de.beiertu.kafka.protobuf.example.config.Config
+import de.beiertu.kafka.protobuf.example.config.ConfigType
+import de.beiertu.kafka.protobuf.example.config.toProperties
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.serialization.StringSerializer
-import java.util.Properties
-import java.util.UUID
 
 
 interface EventProducer {
-    fun publish(message: GeneratedMessageV3): RecordMetadata?
+    fun publish(topic: String, key: String, message: GeneratedMessageV3): RecordMetadata?
 }
 
 class DefaultEventProducer : EventProducer {
-    private val producer = KafkaProducer<String, GeneratedMessageV3>(properties)
+    private val producer = KafkaProducer<String, GeneratedMessageV3>(Config.toProperties(ConfigType.PRODUCER))
 
-    override fun publish(message: GeneratedMessageV3): RecordMetadata? {
-        return producer.send(
-            ProducerRecord(
-                "person-events",
-                UUID.randomUUID().toString(),
-                message
-            )
-        ).get()
+    override fun publish(topic: String, key: String, message: GeneratedMessageV3): RecordMetadata? = try {
+        producer
+            .send(ProducerRecord(topic, key, message))
+            .get()
+    } catch (e: Exception) {
+        null
+            .also { e.printStackTrace() }
     }
-}
-
-val properties = Properties().apply {
-    this[CommonClientConfigs.CLIENT_ID_CONFIG] = "kafka-protobuf-example"
-    this[CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG] = 20000
-    this[CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG] = 500
-
-    this[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = "localhost:9092"
-    this[ProducerConfig.ACKS_CONFIG] = "all"
-    this[ProducerConfig.RETRIES_CONFIG] = "1"
-    this[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
-    this[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = KafkaProtobufSerializer::class.java
-
-    this[KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG] = "http://localhost:8081"
 }
