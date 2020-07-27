@@ -3,20 +3,24 @@
  */
 package de.beiertu.kafka.protobuf.example
 
+import de.beiertu.kafka.protobuf.example.kafka.DefaultEventProducer
 import de.beiertu.protobuf.Person
 
 class App {
-    val greeting: String
-        get() {
-            return "Hello world."
-        }
-}
+    companion object {
+        private val producer = DefaultEventProducer()
 
-fun main() {
-    val person = Person.newBuilder()
-        .setName("Peter")
-        .setAge(25)
-        .setGender(Person.Gender.MALE)
-        .build()
-    println("hello $person")
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val message = Person.newBuilder()
+                .setName("Tung")
+                .setAge(30)
+                .setGender(Person.Gender.MALE)
+                .build()
+
+            producer.publish(message)?.let {
+                println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
+            } ?: println("failed to publish event")
+        }
+    }
 }
