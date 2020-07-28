@@ -6,8 +6,6 @@ package de.beiertu.kafka.protobuf.example
 import de.beiertu.kafka.protobuf.example.config.Config
 import de.beiertu.kafka.protobuf.example.kafka.DefaultEventProducer
 import de.beiertu.kafka.protobuf.example.kafka.EventProducer
-import de.beiertu.kafka.protobuf.example.streams.DefaultStreams
-import de.beiertu.kafka.protobuf.example.streams.Streams
 import de.beiertu.protobuf.AllTypes
 import de.beiertu.protobuf.Order
 import de.beiertu.protobuf.Person
@@ -20,7 +18,6 @@ class App {
         private val log = LoggerFactory.getLogger(App::class.java)
 
         private val producer: EventProducer by lazy { DefaultEventProducer(Config) }
-        private val streams: Streams by lazy { DefaultStreams(Config) }
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -42,7 +39,8 @@ class App {
                                 .setId("UID-$key")
                                 .setNumber("${Random.nextLong()}")
                                 .setCountry("DE")
-                                .setBrand(Order.Brand.MEDIA_MARKT)
+                                .setBrand(Order.Brand.REDCOON)
+                                .setType(Order.Type.B2C)
                                 .build()
                         )
                         .build()
@@ -53,23 +51,6 @@ class App {
                             log.info("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
                         }
                 }
-            }
-
-            Thread.sleep(500)
-
-            try {
-                streams.setUncaughtExceptionHandler { _, e ->
-                    log.error("got uncaught streams error", e)
-                }
-                streams.start()
-                    .also { log.info("streams started") }
-                Thread.sleep(3000)
-            } catch (e: Exception) {
-                log.error("streams failed", e)
-                streams.close()
-            } finally {
-                log.info("closing streams")
-                streams.close()
             }
         }
     }

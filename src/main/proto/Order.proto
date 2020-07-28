@@ -10,9 +10,17 @@ message Order {
   string number = 2;
   string country = 3;
   Brand brand = 4;
+  Type type = 5;
 
   enum Brand {
-    MEDIA_MARKT = 0;
-    SATURN = 1;
+    UNKNOWN = 0;
+    MEDIA_MARKT = 1;
+    SATURN = 2;
+    REDCOON = 3;
+  }
+
+  enum Type {
+    B2C = 0;
+    B2B = 1;
   }
 }
