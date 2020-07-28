@@ -7,6 +7,7 @@ import de.beiertu.kafka.protobuf.example.config.toProperties
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
+import org.slf4j.LoggerFactory
 
 
 interface EventProducer {
@@ -14,6 +15,10 @@ interface EventProducer {
 }
 
 class DefaultEventProducer(config: Config) : EventProducer {
+    companion object {
+        private val log = LoggerFactory.getLogger(DefaultEventProducer::class.java)
+    }
+
     private val producer = KafkaProducer<String, GeneratedMessageV3>(config.toProperties(ConfigType.PRODUCER))
 
     override fun publish(topic: String, key: String, message: GeneratedMessageV3): RecordMetadata? = try {
@@ -22,6 +27,6 @@ class DefaultEventProducer(config: Config) : EventProducer {
             .get()
     } catch (e: Exception) {
         null
-            .also { e.printStackTrace() }
+            .also { log.error("failed to published event $message", e) }
     }
 }

@@ -49,12 +49,7 @@ dependencies {
         exclude("com.squareup.wire") // workaround for multiple variants of wire-schema error
     }
     runtimeOnly("com.squareup.wire:wire-schema:3.2.2")
-
-//    testImplementation("org.testcontainers:kafka:$testContainersVersion")
-//    testImplementation("org.testcontainers:junit-jupiter:$testContainersVersion")
-//    testImplementation("org.testcontainers:testcontainers:$testContainersVersion")
-//    testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
-//    testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
+    implementation("ch.qos.logback:logback-classic:1.0.13")
 }
 
 configurations.all {

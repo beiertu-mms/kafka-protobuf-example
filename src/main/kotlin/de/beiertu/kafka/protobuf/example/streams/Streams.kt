@@ -1,11 +1,12 @@
 package de.beiertu.kafka.protobuf.example.streams
 
-import com.google.protobuf.DynamicMessage
 import de.beiertu.kafka.protobuf.example.config.Config
 import de.beiertu.kafka.protobuf.example.config.ConfigType
 import de.beiertu.kafka.protobuf.example.config.toProperties
+import de.beiertu.protobuf.AllTypes
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /** Kafka streams application */
@@ -19,17 +20,25 @@ interface Streams : AutoCloseable {
  * Default implementation of the [Streams].
  */
 class DefaultStreams(config: Config) : Streams {
+    companion object {
+        private val log = LoggerFactory.getLogger(DefaultStreams::class.java)
+    }
+
     private val kafkaStreams: KafkaStreams
 
     init {
         val streamsBuilder = StreamsBuilder()
 
-        streamsBuilder.stream<String, DynamicMessage>(config.inputTopic)
+        streamsBuilder.stream<String, AllTypes.OrderEvents>(config.inputTopic)
             .peek { key, event ->
-                println("about to process an ${event::class.simpleName} event with key=$key")
+                log.info("about to process an ${event::class.simpleName} event with key=$key")
             }
             .foreach { _, event ->
-                println("Event = $event")
+                when {
+                    event.hasOrder() -> log.info("got order ${event.order}")
+                    event.hasPerson() -> log.info("got person ${event.person}")
+                }
+                println("---")
             }
 
         val topology = streamsBuilder.build()

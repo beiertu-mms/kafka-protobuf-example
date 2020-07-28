@@ -11,17 +11,20 @@ import de.beiertu.kafka.protobuf.example.streams.Streams
 import de.beiertu.protobuf.AllTypes
 import de.beiertu.protobuf.Order
 import de.beiertu.protobuf.Person
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.random.Random
 
 class App {
     companion object {
+        private val log = LoggerFactory.getLogger(App::class.java)
+
         private val producer: EventProducer by lazy { DefaultEventProducer(Config) }
         private val streams: Streams by lazy { DefaultStreams(Config) }
 
         @JvmStatic
         fun main(args: Array<String>) {
-            genKey().let { key ->
+            UUID.randomUUID().toString().let { key ->
                 listOf(
                     AllTypes.OrderEvents.newBuilder()
                         .setPerson(
@@ -47,7 +50,7 @@ class App {
                     producer
                         .publish(Config.inputTopic, key, message)
                         ?.let {
-                            println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
+                            log.info("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
                         }
                 }
             }
@@ -55,19 +58,19 @@ class App {
             Thread.sleep(500)
 
             try {
+                streams.setUncaughtExceptionHandler { _, e ->
+                    log.error("got uncaught streams error", e)
+                }
                 streams.start()
-                    .also { println("streams started") }
+                    .also { log.info("streams started") }
                 Thread.sleep(3000)
             } catch (e: Exception) {
-                println("streams failed")
-                e.printStackTrace()
+                log.error("streams failed", e)
                 streams.close()
             } finally {
-                println("stop streams")
+                log.info("closing streams")
                 streams.close()
             }
         }
-
-        private fun genKey() = UUID.randomUUID().toString()
     }
 }

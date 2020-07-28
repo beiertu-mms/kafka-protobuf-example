@@ -1,7 +1,9 @@
 package de.beiertu.kafka.protobuf.example.config
 
 import com.typesafe.config.ConfigFactory
+import de.beiertu.protobuf.AllTypes
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig
 import io.confluent.kafka.serializers.subject.TopicNameStrategy
@@ -66,11 +68,12 @@ fun Config.toProperties(type: ConfigType) = Properties().apply {
             this[StreamsConfig.APPLICATION_ID_CONFIG] = applicationId
             this[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE
             this[StreamsConfig.REPLICATION_FACTOR_CONFIG] = replicationFactor
-            this[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String().javaClass.name
-            this[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = KafkaProtobufSerde::class.java.name
+            this[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String().javaClass
+            this[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = KafkaProtobufSerde::class.java
+            this[KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE] = AllTypes.OrderEvents::class.java
         }
     }
 
     // https://docs.confluent.io/current/schema-registry/serdes-develop/serdes-protobuf.html#multiple-event-types-in-the-same-topic
-    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicNameStrategy::class.java.name
+    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicNameStrategy::class.java
 }
