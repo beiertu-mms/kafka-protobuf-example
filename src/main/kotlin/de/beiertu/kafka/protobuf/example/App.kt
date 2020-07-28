@@ -12,41 +12,44 @@ import de.beiertu.protobuf.AllTypes
 import de.beiertu.protobuf.Order
 import de.beiertu.protobuf.Person
 import java.util.UUID
+import kotlin.random.Random
 
 class App {
     companion object {
-        private val producer: EventProducer by lazy { DefaultEventProducer() }
-        private val streams: Streams by lazy { DefaultStreams() }
+        private val producer: EventProducer by lazy { DefaultEventProducer(Config) }
+        private val streams: Streams by lazy { DefaultStreams(Config) }
 
         @JvmStatic
         fun main(args: Array<String>) {
-            listOf(
-                AllTypes.OrderEvents.newBuilder()
-                    .setPerson(
-                        Person.newBuilder()
-                            .setName("Tung")
-                            .setAge(30)
-                            .setGender(Person.Gender.MALE)
-                            .build()
-                    )
-                    .build(),
+            genKey().let { key ->
+                listOf(
+                    AllTypes.OrderEvents.newBuilder()
+                        .setPerson(
+                            Person.newBuilder()
+                                .setName("Tung-$key")
+                                .setAge(30)
+                                .setGender(Person.Gender.MALE)
+                                .build()
+                        )
+                        .build(),
 
-                AllTypes.OrderEvents.newBuilder()
-                    .setOrder(
-                        Order.newBuilder()
-                            .setId("uuid")
-                            .setNumber("1")
-                            .setCountry("DE")
-                            .setBrand(Order.Brand.MEDIA_MARKT)
-                            .build()
-                    )
-                    .build()
-            ).forEach { message ->
-                producer
-                    .publish(Config.inputTopic, genKey(), message)
-                    ?.let {
-                        println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
-                    }
+                    AllTypes.OrderEvents.newBuilder()
+                        .setOrder(
+                            Order.newBuilder()
+                                .setId("UID-$key")
+                                .setNumber("${Random.nextLong()}")
+                                .setCountry("DE")
+                                .setBrand(Order.Brand.MEDIA_MARKT)
+                                .build()
+                        )
+                        .build()
+                ).forEach { message ->
+                    producer
+                        .publish(Config.inputTopic, key, message)
+                        ?.let {
+                            println("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
+                        }
+                }
             }
 
             Thread.sleep(500)

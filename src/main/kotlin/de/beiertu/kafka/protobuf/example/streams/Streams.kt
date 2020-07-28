@@ -1,9 +1,9 @@
 package de.beiertu.kafka.protobuf.example.streams
 
+import com.google.protobuf.DynamicMessage
 import de.beiertu.kafka.protobuf.example.config.Config
 import de.beiertu.kafka.protobuf.example.config.ConfigType
 import de.beiertu.kafka.protobuf.example.config.toProperties
-import de.beiertu.protobuf.AllTypes
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
 import java.time.Duration
@@ -18,27 +18,22 @@ interface Streams : AutoCloseable {
 /**
  * Default implementation of the [Streams].
  */
-class DefaultStreams : Streams {
+class DefaultStreams(config: Config) : Streams {
     private val kafkaStreams: KafkaStreams
 
     init {
         val streamsBuilder = StreamsBuilder()
 
-        streamsBuilder.stream<String, AllTypes.OrderEvents>(Config.inputTopic)
+        streamsBuilder.stream<String, DynamicMessage>(config.inputTopic)
             .peek { key, event ->
                 println("about to process an ${event::class.simpleName} event with key=$key")
             }
-            .mapValues { _, event ->
-                when {
-                    event.hasPerson() -> event.also { println("got an order $it") }
-                    event.hasOrder() -> event.also { println("got an order $it") }
-                    else -> null
-                }
+            .foreach { _, event ->
+                println("Event = $event")
             }
-            .filter { _, event -> event != null }
 
         val topology = streamsBuilder.build()
-        kafkaStreams = KafkaStreams(topology, Config.toProperties(ConfigType.STREAMS))
+        kafkaStreams = KafkaStreams(topology, config.toProperties(ConfigType.STREAMS))
     }
 
     override fun setUncaughtExceptionHandler(handler: (thread: Thread, t: Throwable) -> Unit) =

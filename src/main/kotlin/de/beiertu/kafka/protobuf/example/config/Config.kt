@@ -5,7 +5,6 @@ import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig
 import io.confluent.kafka.serializers.subject.TopicNameStrategy
-import io.confluent.kafka.serializers.subject.TopicRecordNameStrategy
 import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -73,6 +72,5 @@ fun Config.toProperties(type: ConfigType) = Properties().apply {
     }
 
     // https://docs.confluent.io/current/schema-registry/serdes-develop/serdes-protobuf.html#multiple-event-types-in-the-same-topic
-//    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicNameStrategy::class.java.name
-    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicRecordNameStrategy::class.java.name
+    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicNameStrategy::class.java.name
 }

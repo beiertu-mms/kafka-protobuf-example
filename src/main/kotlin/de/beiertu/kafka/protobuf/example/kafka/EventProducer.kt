@@ -13,8 +13,8 @@ interface EventProducer {
     fun publish(topic: String, key: String, message: GeneratedMessageV3): RecordMetadata?
 }
 
-class DefaultEventProducer : EventProducer {
-    private val producer = KafkaProducer<String, GeneratedMessageV3>(Config.toProperties(ConfigType.PRODUCER))
+class DefaultEventProducer(config: Config) : EventProducer {
+    private val producer = KafkaProducer<String, GeneratedMessageV3>(config.toProperties(ConfigType.PRODUCER))
 
     override fun publish(topic: String, key: String, message: GeneratedMessageV3): RecordMetadata? = try {
         producer
