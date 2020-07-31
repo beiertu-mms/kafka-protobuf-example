@@ -42,13 +42,8 @@ dependencies {
     implementation("com.typesafe:config:1.4.0")
     implementation("org.apache.kafka:kafka-clients:$cpVersion-ccs")
     implementation("org.apache.kafka:kafka-streams:$cpVersion-ccs")
-    implementation("io.confluent:kafka-protobuf-serializer:$cpVersion") {
-        exclude("com.squareup.wire") // workaround for multiple variants of wire-schema error
-    }
-    implementation("io.confluent:kafka-streams-protobuf-serde:$cpVersion") {
-        exclude("com.squareup.wire") // workaround for multiple variants of wire-schema error
-    }
-    runtimeOnly("com.squareup.wire:wire-schema:3.2.2")
+    implementation("io.confluent:kafka-protobuf-serializer:$cpVersion")
+    implementation("io.confluent:kafka-streams-protobuf-serde:$cpVersion")
     implementation("ch.qos.logback:logback-classic:1.0.13")
 }
 
@@ -72,6 +67,12 @@ configurations.all {
         force("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
         force("org.junit:junit-bom:$junitJupiterVersion")
     }
+}
+
+configurations.forEach {
+    // Fix 'Cannot choose between the following variants' error
+    // See https://github.com/google/protobuf-gradle-plugin/issues/391#issuecomment-609958243
+    it.attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "java-runtime"))
 }
 
 application {
