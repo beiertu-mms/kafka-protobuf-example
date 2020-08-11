@@ -72,7 +72,9 @@ configurations.all {
 configurations.forEach {
     // Fix 'Cannot choose between the following variants' error
     // See https://github.com/google/protobuf-gradle-plugin/issues/391#issuecomment-609958243
-    it.attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "java-runtime"))
+    if (it.name.toLowerCase().contains("proto")) {
+        it.attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "java-runtime"))
+    }
 }
 
 application {

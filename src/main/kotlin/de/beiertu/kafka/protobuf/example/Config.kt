@@ -1,12 +1,10 @@
-package de.beiertu.kafka.protobuf.example.config
+package de.beiertu.kafka.protobuf.example
 
 import com.typesafe.config.ConfigFactory
-import de.beiertu.protobuf.AllTypes
-import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
+import de.beiertu.protobuf.Input
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig
-import io.confluent.kafka.serializers.subject.TopicNameStrategy
 import io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -33,6 +31,8 @@ object Config {
 
     val applicationId: String by lazy { config.getString("kafka.application-id") }
     val inputTopic: String by lazy { config.getString("kafka.input-topic") }
+    val dataTopic: String by lazy { config.getString("kafka.data-topic") }
+    val outputTopic: String by lazy { config.getString("kafka.output-topic") }
     val replicationFactor: Int by lazy { config.getInt("kafka.replication-factor") }
 }
 
@@ -40,7 +40,8 @@ fun Config.toProperties(type: ConfigType) = Properties().apply {
     this[CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG] = 20000
     this[CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG] = 500
 
-    this[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
+    this[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
+        bootstrapServers
     if (clusterApiKey.isNotBlank() && clusterApiSecret.isNotBlank()) {
         this[SaslConfigs.SASL_JAAS_CONFIG] =
             """org.apache.kafka.common.security.plain.PlainLoginModule required username="$clusterApiKey" password="$clusterApiSecret";"""
@@ -49,7 +50,8 @@ fun Config.toProperties(type: ConfigType) = Properties().apply {
         this["ssl.endpoint.identification.algorithm"] = "https"
     }
 
-    this[KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG] = schemaRegistryUrl
+    this[KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG] =
+        schemaRegistryUrl
     if (schemaRegistryApiKey.isNotBlank() && schemaRegistryApiSecret.isNotBlank()) {
         this["basic.auth.credentials.source"] = "USER_INFO"
         this["schema.registry.basic.auth.user.info"] = "$schemaRegistryApiKey:$schemaRegistryApiSecret"
@@ -57,7 +59,8 @@ fun Config.toProperties(type: ConfigType) = Properties().apply {
 
     when (type) {
         ConfigType.PRODUCER -> {
-            this[CommonClientConfigs.CLIENT_ID_CONFIG] = applicationId
+            this[CommonClientConfigs.CLIENT_ID_CONFIG] =
+                applicationId
             this[ProducerConfig.ACKS_CONFIG] = "all"
             this[ProducerConfig.RETRIES_CONFIG] = "1"
             this[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
@@ -65,15 +68,14 @@ fun Config.toProperties(type: ConfigType) = Properties().apply {
         }
 
         ConfigType.STREAMS -> {
-            this[StreamsConfig.APPLICATION_ID_CONFIG] = applicationId
+            this[StreamsConfig.APPLICATION_ID_CONFIG] =
+                applicationId
             this[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE
-            this[StreamsConfig.REPLICATION_FACTOR_CONFIG] = replicationFactor
+            this[StreamsConfig.REPLICATION_FACTOR_CONFIG] =
+                replicationFactor
             this[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String().javaClass
             this[StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG] = KafkaProtobufSerde::class.java
-            this[KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE] = AllTypes.OrderEvents::class.java
+            this[KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE] = Input::class.java
         }
     }
-
-    // https://docs.confluent.io/current/schema-registry/serdes-develop/serdes-protobuf.html#multiple-event-types-in-the-same-topic
-    this[AbstractKafkaSchemaSerDeConfig.VALUE_SUBJECT_NAME_STRATEGY] = TopicNameStrategy::class.java
 }

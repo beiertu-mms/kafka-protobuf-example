@@ -3,55 +3,90 @@
  */
 package de.beiertu.kafka.protobuf.example
 
-import de.beiertu.kafka.protobuf.example.config.Config
-import de.beiertu.kafka.protobuf.example.kafka.DefaultEventProducer
-import de.beiertu.kafka.protobuf.example.kafka.EventProducer
-import de.beiertu.protobuf.AllTypes
-import de.beiertu.protobuf.Order
-import de.beiertu.protobuf.Person
+import de.beiertu.protobuf.Data
+import de.beiertu.protobuf.Input
 import org.slf4j.LoggerFactory
 import java.util.UUID
-import kotlin.random.Random
 
-class App {
+class ProducerApp {
     companion object {
-        private val log = LoggerFactory.getLogger(App::class.java)
-
-        private val producer: EventProducer by lazy { DefaultEventProducer(Config) }
+        private val log = LoggerFactory.getLogger(ProducerApp::class.java)
+        private val producer: Producer by lazy { DefaultProducer(Config) }
 
         @JvmStatic
         fun main(args: Array<String>) {
             UUID.randomUUID().toString().let { key ->
                 listOf(
-                    AllTypes.OrderEvents.newBuilder()
-                        .setPerson(
-                            Person.newBuilder()
-                                .setName("Tung-$key")
-                                .setAge(30)
-                                .setGender(Person.Gender.MALE)
-                                .build()
-                        )
-                        .build(),
-
-                    AllTypes.OrderEvents.newBuilder()
-                        .setOrder(
-                            Order.newBuilder()
-                                .setId("UID-$key")
-                                .setNumber("${Random.nextLong()}")
-                                .setCountry("DE")
-                                .setBrand(Order.Brand.REDCOON)
-                                .setType(Order.Type.B2C)
-                                .build()
-                        )
+                    Input.newBuilder()
+                        .setId(key)
+                        .setMessage("input:$key")
                         .build()
-                ).forEach { message ->
+                ).forEach { event ->
                     producer
-                        .publish(Config.inputTopic, key, message)
+                        .publish(Config.inputTopic, key, event)
                         ?.let {
-                            log.info("published event on topic=${it.topic()}, partition=${it.partition()}, offset=${it.offset()}")
-                        }
+                            log.info(
+                                "published event {} to topic={} on partition={}, offset={}",
+                                event,
+                                it.topic(),
+                                it.partition(),
+                                it.offset()
+                            )
+                        } ?: log.info("failed to publish input event, got no record metadata")
+                }
+
+                listOf(
+                    Data.newBuilder()
+                        .setId(key)
+                        .setMessage("dataA:$key")
+                        .build(),
+                    Data.newBuilder()
+                        .setId(key)
+                        .setMessage("dataB:$key")
+                        .build()
+                ).forEach { event ->
+                    producer
+                        .publish(Config.dataTopic, key, event)
+                        ?.let {
+                            log.info(
+                                "published event {} to topic={} on partition={}, offset={}",
+                                event,
+                                it.topic(),
+                                it.partition(),
+                                it.offset()
+                            )
+                        } ?: log.info("failed to publish input event, got no record metadata")
                 }
             }
+        }
+    }
+}
+
+class StreamApp {
+    companion object {
+        private val log = LoggerFactory.getLogger(StreamApp::class.java)
+        private val streams: Streams by lazy { DefaultStreams(Config) }
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val shutdown = {
+                streams.close()
+                log.info("service shutting down")
+            }
+
+            streams.setUncaughtExceptionHandler { _, e ->
+                log.error("unable to process event due to an exception: ${e.message}", e)
+                shutdown()
+            }
+
+            streams.start()
+
+            Runtime.getRuntime().addShutdownHook(object : Thread() {
+                override fun start() {
+                    log.info("shutting service since JVM is shutting down")
+                    shutdown()
+                }
+            })
         }
     }
 }
