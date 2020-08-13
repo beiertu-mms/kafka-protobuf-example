@@ -17,13 +17,17 @@ class ProducerApp {
         fun main(args: Array<String>) {
             UUID.randomUUID().toString().let { key ->
                 listOf(
-                    Input.newBuilder()
+                    Data.newBuilder()
                         .setId(key)
-                        .setMessage("input:$key")
+                        .setMessage("dataA:$key")
+                        .build(),
+                    Data.newBuilder()
+                        .setId(key)
+                        .setMessage("dataB:$key")
                         .build()
                 ).forEach { event ->
                     producer
-                        .publish(Config.inputTopic, key, event)
+                        .publish(Config.dataTopic, key, event)
                         ?.let {
                             log.info(
                                 "published event {} to topic={} on partition={}, offset={}",
@@ -36,17 +40,13 @@ class ProducerApp {
                 }
 
                 listOf(
-                    Data.newBuilder()
+                    Input.newBuilder()
                         .setId(key)
-                        .setMessage("dataA:$key")
-                        .build(),
-                    Data.newBuilder()
-                        .setId(key)
-                        .setMessage("dataB:$key")
+                        .setMessage("input:$key")
                         .build()
                 ).forEach { event ->
                     producer
-                        .publish(Config.dataTopic, key, event)
+                        .publish(Config.inputTopic, key, event)
                         ?.let {
                             log.info(
                                 "published event {} to topic={} on partition={}, offset={}",

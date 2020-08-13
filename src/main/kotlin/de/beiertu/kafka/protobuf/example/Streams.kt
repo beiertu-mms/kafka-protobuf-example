@@ -8,7 +8,7 @@ import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.Consumed
 import org.apache.kafka.streams.kstream.Joined
-import org.apache.kafka.streams.kstream.Produced
+import org.apache.kafka.streams.kstream.Predicate
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
@@ -32,30 +32,35 @@ class DefaultStreams(config: Config) : Streams {
     init {
         val dataSerde = DataSerde().apply { configure(config) }
         val inputSerde = InputSerde().apply { configure(config) }
-        val outputSerde = OutputSerde().apply { configure(config) }
 
         StreamsBuilder().let { streamsBuilder ->
             val dataTable = streamsBuilder.table<String, Data>(
                 config.dataTopic, Consumed.with(Serdes.String(), dataSerde)
-            ).filter { _, event -> event != null }
+            )
 
             streamsBuilder.stream<String, Input>(
                 config.inputTopic, Consumed.with(Serdes.String(), inputSerde)
             ).filter { _, event ->
-                (event != null)
-                    .also { log.info("got event {}", event) }
-            }.join(
+                (event != null).also { log.info("got event {}", event) }
+            }.leftJoin(
                 dataTable,
                 { input, data ->
-                    Output
-                        .newBuilder()
-                        .setId(input.id)
-                        .setMessage("${input.message} ${data.message}")
-                        .build()
-                        .also { log.info("join input $input and data $data") }
+                    data?.let {
+                        Output
+                            .newBuilder()
+                            .setId(input.id)
+                            .setMessage("${input.message} ${data.message}")
+                            .build()
+                            .also { log.info("join input $input and data $data") }
+                    } ?: input.also { log.info("nothing to join, data is null") }
                 },
-                Joined.with(Serdes.String(), InputSerde(), DataSerde())
-            ).to(config.outputTopic, Produced.with(Serdes.String(), outputSerde))
+                Joined.with(Serdes.String(), inputSerde, dataSerde)
+            ).branch(
+                Predicate { _, event -> event is Input },
+                Predicate { _, event -> event is Output }
+            ).apply {
+                get(1).to(config.outputTopic)
+            }
 
             val topology = streamsBuilder.build()
             kafkaStreams = KafkaStreams(topology, config.toProperties(ConfigType.STREAMS))
